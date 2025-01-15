@@ -109,5 +109,4 @@ Se pueden utilizar herramientas como **Postman** o **cURL** para probar los endp
 - Este proyecto utiliza **FileSystem** para garantizar la persistencia de datos en los archivos `products.json` y `carts.json`.
 - Todos los cambios realizados a través de los endpoints o las vistas se reflejan automáticamente en los archivos de datos.
 
----
-Este proyecto constituye una implementación completa y modularizada para la gestión de productos y carritos, ideal para aplicaciones que requieren sincronización en tiempo real. A disposición para consultas y ampliaciones. 🚀
+
