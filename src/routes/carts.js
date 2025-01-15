@@ -1,10 +1,10 @@
 const express = require('express');
 const fs = require('fs');
 const router = express.Router();
-const cartsPath = './src/data/carts.json';
-const productsPath = './src/data/products.json';
+const cartsPath = './data/carts.json';
+const productsPath = './data/products.json';
 
-// Leer el archivo de carritos
+
 const readCarts = () => {
   try {
     const data = fs.readFileSync(cartsPath, 'utf8');
