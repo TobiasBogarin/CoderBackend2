@@ -27,8 +27,14 @@
   },
   {
     "id": 5,
-    "title": "Remera boca",
-    "description": "BOCA",
-    "stock": "201"
+    "title": "BOCA GRANDE",
+    "description": "EL MAS GRANDE",
+    "stock": "200000"
+  },
+  {
+    "id": 6,
+    "title": "river",
+    "description": "GALLINA",
+    "stock": "-1"
   }
 ]

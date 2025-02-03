@@ -11,11 +11,12 @@
     <header>
         <h1>Productos en Tiempo Real</h1>
     </header>
+
     <ul id="product-list">
-        {{#each products}}
-        <li id="product-{{id}}">
-            <strong>{{title}}</strong> - {{description}} (Stock: {{stock}})
-            <button onclick="deleteProduct({{id}})">Eliminar</button>
+        {{#each payload}}
+        <li id="product-{{_id}}">
+            <strong>{{title}}</strong> - {{description}} (Stock: {{stock}}, Precio: ${{price}}, Categoría: {{category}}, Código: {{code}})
+            <button class="delete-btn" data-id="{{_id}}">Eliminar</button>
         </li>
         {{/each}}
     </ul>
@@ -23,39 +24,78 @@
     <form id="product-form">
         <input type="text" id="title" placeholder="Título" required>
         <input type="text" id="description" placeholder="Descripción" required>
+        <input type="number" id="price" placeholder="Precio" required>
         <input type="number" id="stock" placeholder="Stock" required>
+        <input type="text" id="category" placeholder="Categoría" required>
+        <input type="text" id="code" placeholder="Código" required>
         <button type="submit">Agregar</button>
     </form>
 
     <script>
         const socket = io();
 
+        // Agregar producto
         document.getElementById('product-form').addEventListener('submit', (e) => {
             e.preventDefault();
             const title = document.getElementById('title').value;
             const description = document.getElementById('description').value;
+            const price = document.getElementById('price').value;
             const stock = document.getElementById('stock').value;
+            const category = document.getElementById('category').value;
+            const code = document.getElementById('code').value;
 
-            socket.emit('addProduct', { title, description, stock });
+            if (!title || !description || !price || !stock || !category || !code) {
+                alert("Todos los campos son obligatorios");
+                return;
+            }
+
+            socket.emit('addProduct', { title, description, price, stock, category, code });
             e.target.reset();
         });
 
+        // Función para eliminar producto
         function deleteProduct(id) {
+            if (!id) {
+                alert("Error: ID del producto no válido.");
+                return;
+            }
+
             socket.emit('deleteProduct', id);
         }
 
-        socket.on('updateProducts', (products) => {
+        // Escuchar actualizaciones de productos en tiempo real
+        socket.on('update-products', (products) => {
             const productList = document.getElementById('product-list');
             productList.innerHTML = '';
+
             products.forEach((product) => {
-                productList.innerHTML += `
-                    <li id="product-${product.id}">
-                        <strong>${product.title}</strong> - ${product.description} (Stock: ${product.stock})
-                        <button onclick="deleteProduct(${product.id})">Eliminar</button>
-                    </li>
+                const li = document.createElement('li');
+                li.id = `product-${product._id}`;
+                li.innerHTML = `
+                    <strong>${product.title}</strong> - ${product.description} 
+                    (Stock: ${product.stock}, Precio: $${product.price}, Categoría: ${product.category}, Código: ${product.code})
+                    <button class="delete-btn" data-id="${product._id}">Eliminar</button>
                 `;
+                productList.appendChild(li);
+            });
+
+            // Volver a agregar los event listeners a los nuevos botones
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const productId = e.target.getAttribute('data-id');
+                    deleteProduct(productId);
+                });
             });
         });
+
+        // Agregar eventos a los botones de eliminar cuando se carga la página
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const productId = e.target.getAttribute('data-id');
+                deleteProduct(productId);
+            });
+        });
+
     </script>
 </body>
 </html>

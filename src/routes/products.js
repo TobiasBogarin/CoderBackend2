@@ -1,100 +1,123 @@
 const express = require('express');
-const fs = require('fs');
 const router = express.Router();
-const productsPath = './data/products.json';
+const Product = require('../models/Product');
+const mongoose = require('mongoose');
 
-
-const readProducts = () => {
+// 🔹 GET /api/products - Obtener productos con paginación y filtros
+router.get('/', async (req, res) => {
   try {
-    const data = fs.readFileSync(productsPath, 'utf8');
-    console.log("Contenido del archivo leído:", data); 
-    return JSON.parse(data);
+    const { limit = 10, page = 1, query, sort } = req.query;
+    const filter = query ? { category: query } : {}; // Filtrar por categoría si se especifica
+    const sortOrder = sort === 'desc' ? -1 : 1; // Ordenación ascendente o descendente
+
+    const options = {
+      limit: parseInt(limit),
+      page: parseInt(page),
+      sort: { price: sortOrder }
+    };
+
+    const result = await Product.paginate(filter, options);
+
+    const response = {
+      status: 'success',
+      payload: result.docs,
+      totalPages: result.totalPages,
+      prevPage: result.prevPage,
+      nextPage: result.nextPage,
+      page: result.page,
+      hasPrevPage: result.hasPrevPage,
+      hasNextPage: result.hasNextPage,
+      prevLink: result.hasPrevPage ? `/api/products?limit=${limit}&page=${result.prevPage}&query=${query || ''}&sort=${sort || ''}` : null,
+      nextLink: result.hasNextPage ? `/api/products?limit=${limit}&page=${result.nextPage}&query=${query || ''}&sort=${sort || ''}` : null
+    };
+
+    res.json(response);
   } catch (error) {
-    console.error("Error al leer el archivo de productos:", error.message);
-    return [];
+    res.status(500).json({ status: 'error', message: error.message });
   }
-};
-
-
-
-const writeProducts = (products) => {
-  fs.writeFileSync(productsPath, JSON.stringify(products, null, 2), 'utf8');
-};
-
-router.get('/', (req, res) => {
-  const products = readProducts();
-  console.log("Productos enviados al cliente:", products); 
-  res.json(products);
 });
 
+// 🔹 GET /api/products/:pid - Obtener un solo producto
+router.get('/:pid', async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.pid)) {
+      return res.status(400).json({ status: 'error', message: 'ID de producto inválido' });
+    }
 
+    const product = await Product.findById(req.params.pid);
 
-router.post('/', (req, res) => {
-  const products = readProducts();
-  const { title, description, code, price, status, stock, category, thumbnails } = req.body;
+    if (!product) {
+      return res.status(404).json({ status: 'error', message: 'Producto no encontrado' });
+    }
 
-  if (!title || !description || !code || !price || !stock || !category) {
-    return res.status(400).json({ error: 'Todos los campos son obligatorios.' });
+    res.json({ status: 'success', payload: product });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
   }
-
-  const newProduct = {
-    id: products.length ? products[products.length - 1].id + 1 : 1,
-    title,
-    description,
-    code,
-    price,
-    status: status ?? true,
-    stock,
-    category,
-    thumbnails: thumbnails || [],
-  };
-
-  products.push(newProduct);
-  writeProducts(products);
-  res.status(201).json(newProduct);
 });
 
+// 🔹 POST /api/products - Crear un producto
+router.post('/', async (req, res) => {
+  try {
+    const { title, description, price, stock, category, thumbnails, code, status } = req.body;
 
-router.put('/:pid', (req, res) => {
-  const products = readProducts();
-  const { pid } = req.params;
-  const { title, description, code, price, status, stock, category, thumbnails } = req.body;
+    if (!title || !description || !price || !stock || !category || !code) {
+      return res.status(400).json({ status: 'error', message: 'Todos los campos son obligatorios' });
+    }
 
-  const productIndex = products.findIndex((p) => p.id === parseInt(pid));
-  if (productIndex === -1) {
-    return res.status(404).json({ error: 'Producto no encontrado.' });
+    const newProduct = await Product.create({
+      title,
+      description,
+      price,
+      stock,
+      category,
+      thumbnails: thumbnails || [],
+      code,
+      status: status ?? true
+    });
+
+    res.status(201).json({ status: 'success', payload: newProduct });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
   }
-
-  const updatedProduct = {
-    ...products[productIndex],
-    title: title ?? products[productIndex].title,
-    description: description ?? products[productIndex].description,
-    code: code ?? products[productIndex].code,
-    price: price ?? products[productIndex].price,
-    status: status ?? products[productIndex].status,
-    stock: stock ?? products[productIndex].stock,
-    category: category ?? products[productIndex].category,
-    thumbnails: thumbnails ?? products[productIndex].thumbnails,
-  };
-
-  products[productIndex] = updatedProduct;
-  writeProducts(products);
-  res.status(200).json(updatedProduct);
 });
 
+// 🔹 PUT /api/products/:pid - Actualizar un producto
+router.put('/:pid', async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.pid)) {
+      return res.status(400).json({ status: 'error', message: 'ID de producto inválido' });
+    }
 
-router.delete('/:pid', (req, res) => {
-  const products = readProducts();
-  const { pid } = req.params;
+    const updatedProduct = await Product.findByIdAndUpdate(req.params.pid, req.body, { new: true });
 
-  const productIndex = products.findIndex((p) => p.id === parseInt(pid));
-  if (productIndex === -1) {
-    return res.status(404).json({ error: 'Producto no encontrado.' });
+    if (!updatedProduct) {
+      return res.status(404).json({ status: 'error', message: 'Producto no encontrado' });
+    }
+
+    res.json({ status: 'success', payload: updatedProduct });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
   }
+});
 
-  products.splice(productIndex, 1);
-  writeProducts(products);
-  res.status(200).json({ message: 'Producto eliminado correctamente.' });
+// 🔹 DELETE /api/products/:pid - Eliminar un producto
+router.delete('/:pid', async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.pid)) {
+      return res.status(400).json({ status: 'error', message: 'ID de producto inválido' });
+    }
+
+    const deletedProduct = await Product.findByIdAndDelete(req.params.pid);
+
+    if (!deletedProduct) {
+      return res.status(404).json({ status: 'error', message: 'Producto no encontrado' });
+    }
+
+    res.json({ status: 'success', payload: { id: req.params.pid } });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
 });
 
 module.exports = router;

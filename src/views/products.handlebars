@@ -5,17 +5,177 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lista de Productos</title>
     <link rel="stylesheet" href="/css/styles.css">
+    
+    <!-- Toastify (para notificaciones) -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
+    <!-- SweetAlert2 (para confirmaciones y carrito) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
     <header>
         <h1>Lista de Productos</h1>
+        <button id="view-cart">🛒 Ver Carrito</button> <!-- 🔹 Botón para ver el carrito -->
     </header>
-    <ul>
-        {{#each products}}
+
+    <ul id="product-list">
+        {{#each payload}}
         <li>
             <strong>{{title}}</strong> - {{description}} (Stock: {{stock}})
+            <br>Precio: ${{price}}
+            <br>
+            <button class="add-to-cart" data-id="{{_id}}" data-title="{{title}}" data-price="{{price}}">Agregar al Carrito</button>
         </li>
         {{/each}}
     </ul>
+
+    <!-- Botón para finalizar la compra -->
+    <button id="finish-cart">Finalizar Compra</button>
+
+    <script>
+        const socket = io();
+        let cartId = localStorage.getItem("cartId");
+
+        async function createCart() {
+            try {
+                const response = await fetch('/api/carts', { method: 'POST' });
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    cartId = data.payload._id;
+                    localStorage.setItem("cartId", cartId);
+                } else {
+                    console.error("Error al crear el carrito.");
+                }
+            } catch (error) {
+                console.error("Error al crear el carrito:", error);
+            }
+        }
+
+        async function addToCart(productId, title, price) {
+            if (!cartId) await createCart();
+
+            try {
+                const response = await fetch(`/api/carts/${cartId}/products/${productId}`, { 
+                    method: 'POST',
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ quantity: 1 })
+                });
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    showToast(`"${title}" agregado al carrito.`, "success");
+                } else {
+                    showToast("Error al agregar producto.", "error");
+                }
+            } catch (error) {
+                console.error("Error al agregar producto al carrito:", error);
+                showToast("Error al agregar producto.", "error");
+            }
+        }
+
+        async function viewCart() {
+            if (!cartId) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Carrito vacío',
+                    text: 'No tienes productos en el carrito.',
+                });
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/carts/${cartId}`);
+                const data = await response.json();
+
+                if (data.status === 'success' && data.payload.length > 0) {
+                    let cartItems = data.payload.map(item => 
+                        `<li><strong>${item.product.title}</strong> - Cantidad: ${item.quantity}</li>`
+                    ).join("");
+
+                    Swal.fire({
+                        title: '🛒 Tu Carrito',
+                        html: `<ul>${cartItems}</ul>`,
+                        confirmButtonText: 'Cerrar'
+                    });
+                } else {
+                    clearCartUI(); // 🔹 Si está vacío, limpiar la UI y deshabilitar el botón
+                }
+            } catch (error) {
+                console.error("Error al obtener el carrito:", error);
+            }
+        }
+
+
+        async function finishCart() {
+            if (!cartId) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Carrito vacío',
+                    text: 'No hay productos en el carrito para finalizar la compra.',
+                });
+                return;
+            }
+            try {
+                const response = await fetch(`/api/carts/${cartId}/checkout`, { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Compra finalizada',
+                        text: 'Los productos han sido comprados con éxito. Se generó un nuevo carrito.',
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        localStorage.setItem("cartId", data.newCartId); // Guardar el nuevo carrito
+                        clearCartUI(); // 🔹 Vaciar la vista del carrito
+                    });
+                }
+            } catch (error) {
+                console.error("Error al finalizar la compra:", error);
+            }
+        }
+
+
+        function clearCartUI() {
+            Swal.fire({
+                icon: 'info',
+                title: 'Carrito Vaciado',
+                text: 'Tu carrito ahora está vacío.',
+                confirmButtonText: 'OK'
+            });
+
+            document.getElementById('view-cart').classList.add('disabled'); // Deshabilitar el botón si está vacío
+        }
+
+
+        function showToast(message, type) {
+            Toastify({
+                text: message,
+                duration: 3000,
+                close: true,
+                gravity: "top",
+                position: "right",
+                backgroundColor: type === "success" ? "green" : "red",
+                stopOnFocus: true
+            }).showToast();
+        }
+
+        document.querySelectorAll('.add-to-cart').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const productId = e.target.getAttribute('data-id');
+                const title = e.target.getAttribute('data-title');
+                const price = e.target.getAttribute('data-price');
+                addToCart(productId, title, price);
+            });
+        });
+
+        document.getElementById('view-cart').addEventListener('click', viewCart);
+        document.getElementById('finish-cart').addEventListener('click', finishCart);
+    </script>
+
 </body>
 </html>

@@ -1,112 +1,97 @@
+# 🛒 Proyecto Backend - E-commerce con Node.js y MongoDB
 
-# API de Gestión de Productos y Carritos con Vistas en Tiempo Real
+Este es un sistema de backend para un e-commerce que gestiona productos y carritos de compra, implementado con **Node.js**, **Express** y **MongoDB**.
 
-## Descripción
-Este proyecto consiste en una API destinada a la gestión de productos y carritos de compras, complementada con funcionalidades de vistas en tiempo real mediante el uso de **Socket.IO**. Incluye la capacidad de realizar operaciones de creación, lectura, actualización y eliminación sobre productos, así como la administración detallada de carritos de compras. Todas las interfaces presentan un diseño unificado para garantizar una experiencia de usuario coherente.
+---
 
-## Requisitos del Sistema
-- **Node.js**: versión 14 o superior.
-- **npm**: versión 6 o superior.
+## 🚀 Características principales
 
-## Proceso de Instalación
-1. Clonar el repositorio desde el sistema de control de versiones:
-   ```bash
-   git clone <URL-del-repositorio>
-   cd <nombre-del-repositorio>
-   ```
+- **Productos**
+  - Listado de productos con paginación, filtros y ordenamiento.
+  - Visualización de un producto específico.
+  - Agregar, actualizar y eliminar productos.
 
-2. Instalar las dependencias necesarias mediante npm:
-   ```bash
-   npm install
-   ```
+- **Carrito de Compras**
+  - Crear un nuevo carrito.
+  - Agregar productos al carrito.
+  - Ver los productos en el carrito.
+  - Eliminar productos del carrito.
+  - Vaciar el carrito al finalizar la compra.
 
-3. Verificar la existencia de los archivos necesarios en la carpeta `src/data`:
-   - **products.json**:
-     ```json
-     []
-     ```
-   - **carts.json**:
-     ```json
-     []
-     ```
+- **WebSockets**
+  - Productos en tiempo real con actualización dinámica.
+  - Notificaciones visuales con **Toastify** y confirmaciones con **SweetAlert2**.
 
-   Si no se encuentran, crear los archivos y asegurarse de que estén vacíos inicialmente.
+---
 
-4. Iniciar el servidor ejecutando el siguiente comando:
-   ```bash
-   node app.js
-   ```
+## 🏗️ Instalación y configuración
 
-5. Acceder a la aplicación a través del navegador en la dirección `http://localhost:8080`.
+### 1️⃣ Clonar el repositorio
 
-## Funcionalidades
+```sh
+git clone https://github.com/tu-usuario/tu-repositorio.git
+cd tu-repositorio
+2️⃣ Instalar dependencias
+sh
+Copiar
+npm install
+3️⃣ Configurar variables de entorno
+Crear un archivo .env en la raíz con el siguiente contenido:
 
-### Gestión de Productos
-#### Endpoints de la API
-- **GET** `/api/products`: Recuperar todos los productos disponibles.
-- **POST** `/api/products`: Crear un nuevo producto con los datos proporcionados.
-- **PUT** `/api/products/:pid`: Modificar un producto existente mediante su identificador único.
-- **DELETE** `/api/products/:pid`: Eliminar un producto utilizando su identificador único.
+ini
+Copiar
+MONGODB_URI=mongodb://localhost:27017/ecommerce
+PORT=8080
+4️⃣ Iniciar el servidor
+sh
+Copiar
+npm start
+El servidor correrá en http://localhost:8080 🚀.
 
-#### Vista de Productos
-- **URL**: `/products`
-- Presenta una lista de todos los productos almacenados en el archivo `products.json`.
-- Refleja los cambios realizados en los productos al recargar la página.
+📌 Endpoints
+🛍️ Productos
+GET /api/products?page=1&limit=10&sort=asc&query=categoria
+Obtiene productos con paginación, filtros y ordenamiento.
+GET /api/products/:pid
+Obtiene un producto por ID.
+POST /api/products
+Agrega un nuevo producto.
+PUT /api/products/:pid
+Modifica un producto existente.
+DELETE /api/products/:pid
+Elimina un producto por su ID.
+🛒 Carrito de Compras
+POST /api/carts/
+Crea un carrito nuevo.
+GET /api/carts/:cid
+Obtiene los productos de un carrito.
+POST /api/carts/:cid/products/:pid
+Agrega un producto al carrito.
+DELETE /api/carts/:cid/products/:pid
+Elimina un producto del carrito.
+PUT /api/carts/:cid
+Reemplaza el carrito con nuevos productos.
+DELETE /api/carts/:cid
+Vacía el carrito.
+🎨 Vistas
+🛍️ Vista de Productos
 
-### Gestión de Carritos
-#### Endpoints de la API
-- **POST** `/api/carts`: Crear un nuevo carrito.
-- **GET** `/api/carts/:cid`: Obtener los productos contenidos en un carrito específico.
-- **POST** `/api/carts/:cid/product/:pid`: Agregar un producto a un carrito.
-- **DELETE** `/api/carts/:cid/product/:pid`: Eliminar un producto de un carrito específico.
+URL: /products
+Muestra una lista de productos con paginación, filtros y ordenamiento.
+Permite agregar productos al carrito.
+🔄 Vista de Productos en Tiempo Real
 
-### Vista en Tiempo Real
-- **URL**: `/realtimeProducts`
-- Muestra los productos almacenados en `products.json` con actualizaciones en tiempo real.
-- Permite:
-  - Agregar nuevos productos mediante un formulario interactivo.
-  - Eliminar productos utilizando botones específicos.
-- Los cambios en la lista de productos se reflejan automáticamente gracias a **Socket.IO**.
+URL: /realtimeproducts
+Muestra productos actualizados en tiempo real mediante WebSockets.
+Permite agregar y eliminar productos dinámicamente.
+🛒 Vista del Carrito
 
-## Estructura del Proyecto
-```
-├── src
-│   ├── app.js               # Archivo principal del servidor
-│   ├── data
-│   │   ├── products.json    # Archivo de persistencia para productos
-│   │   └── carts.json       # Archivo de persistencia para carritos
-│   ├── public
-│   │   └── css
-│   │       └── styles.css   # Estilos globales
-│   ├── routes
-│   │   ├── carts.js         # Rutas para carritos
-│   │   ├── products.js      # Rutas para productos
-│   │   └── views.router.js  # Rutas para vistas
-│   └── views
-│       ├── layouts
-│       │   └── main.handlebars  # Layout principal para vistas
-│       ├── products.handlebars # Vista de productos
-│       └── realtimeProducts.handlebars # Vista en tiempo real
-```
-
-## Procedimiento de Pruebas
-### Pruebas de los Endpoints de la API
-Se pueden utilizar herramientas como **Postman** o **cURL** para probar los endpoints. Ejemplos:
-- Obtener todos los productos:
-  ```bash
-  curl -X GET http://localhost:8080/api/products
-  ```
-- Crear un nuevo producto:
-  ```bash
-  curl -X POST http://localhost:8080/api/products     -H "Content-Type: application/json"     -d '{"title": "Nuevo Producto", "description": "Descripción", "code": "ABC123", "price": 100, "stock": 10, "category": "general"}'
-  ```
-
-### Pruebas de las Vistas
-1. Acceder a la URL `/products` para visualizar la lista de productos.
-2. Acceder a `/realtimeProducts` para interactuar con los productos en tiempo real, probando la creación y eliminación de productos.
-
-## Notas Adicionales
-- Este proyecto utiliza **FileSystem** para garantizar la persistencia de datos en los archivos `products.json` y `carts.json`.
-- Todos los cambios realizados a través de los endpoints o las vistas se reflejan automáticamente en los archivos de datos.
-
-
+URL: /carts/:cid
+Muestra los productos agregados al carrito en una ventana emergente.
+📦 Tecnologías utilizadas
+Node.js y Express.js
+MongoDB con Mongoose
+Handlebars para las vistas
+WebSockets (Socket.IO)
+SweetAlert2 y Toastify.js para notificaciones
+Dotenv para la configuración del entorno
